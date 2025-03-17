@@ -5,6 +5,7 @@ const { request } = require("graphql-request");
 const { Pool } = require("pg");
 const { OpenAI } = require("openai");
 const { Anthropic } = require("@anthropic-ai/sdk");
+const { ChatMistralAI } = require("langchain/chat_models/mistralai");
 const { spawn } = require("child_process");
 
 const app = express();
@@ -12,12 +13,17 @@ app.use(express.json());
 
 // Load AI config
 const config = JSON.parse(fs.readFileSync("models.json", "utf8"));
+// Setup URLs
 const db = new Pool({ connectionString: "postgres://user:password@localhost:5432/dbname" });
+const GraphQLUrl = "https://your-graphql-api.com/graphql";
+const RestApiUrl = "https://your-rest-api.com";
+
 
 function getModelInstance(modelName) {
     const modelConfig = config.models[modelName || config.default_model];
     if (modelConfig.provider === "OpenAI") return new OpenAI({ apiKey: modelConfig.api_key });
     if (modelConfig.provider === "Anthropic") return new Anthropic({ apiKey: modelConfig.api_key });
+    if (modelConfig.provider === "ChatMistralAI") return new ChatMistralAI({ apiKey: modelConfig.api_key, modelName:model });      
     if (modelConfig.provider === "DeepSeek") return modelConfig;
     throw new Error("Unsupported model");
 }
@@ -55,10 +61,10 @@ async function generateQuery(naturalQuery, queryType, modelName) {
 }
 
 async function executeQuery(query, queryType) {
-    if (queryType === "GraphQL") return await request("https://your-graphql-api.com/graphql", query);
+    if (queryType === "GraphQL") return await request(GraphQLUrl, query);
     if (queryType === "REST") {
         const { method, url, params, body } = JSON.parse(query);
-        return await axios({ method, url: `https://your-rest-api.com${url}`, params, data: body });
+        return await axios({ method, url: `${RestApiUrl}${url}`, params, data: body });
     }
     if (queryType === "SQL") return await db.query(query);
 }
