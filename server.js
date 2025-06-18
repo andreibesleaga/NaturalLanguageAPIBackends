@@ -25,6 +25,17 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: 'Internal Server Error' });
 });
 
+const validateQueryGeneration = (req, res, next) => {
+    const { query, queryType, model } = req.body;
+    if (!query || !queryType) {
+        return res.status(400).json({ error: "Missing required fields" });
+    }
+    if (!["GraphQL", "REST", "SQL"].includes(queryType)) {
+        return res.status(400).json({ error: "Invalid query type" });
+    }
+    next();
+};
+
 function getModelInstance(modelName) {
     try {
         const modelConfig = config.models[modelName || config.default_model];
@@ -105,19 +116,8 @@ async function _executeQuery(query, queryType) {
     if (queryType === "SQL") return await db.query(query);
 }
 
-// Add after express setup
-const validateQuery = (req, res, next) => {
-    const { query, queryType, model } = req.body;
-    if (!query || !queryType) {
-        return res.status(400).json({ error: "Missing required fields" });
-    }
-    if (!["GraphQL", "REST", "SQL"].includes(queryType)) {
-        return res.status(400).json({ error: "Invalid query type" });
-    }
-    next();
-};
 
-app.post("/generate-query", validateQuery, async (req, res) => {
+app.post("/generate-query", validateQueryGeneration, async (req, res) => {
     try {
         const { query, queryType, model } = req.body;
         const generatedQuery = await generateQuery(query, queryType, model);
@@ -127,14 +127,17 @@ app.post("/generate-query", validateQuery, async (req, res) => {
     }
 });
 
-app.post("/execute-query", async (req, res) => {
-    try {
-        const { query, queryType } = req.body;
-        const result = await executeQuery(query, queryType);
-        res.json(result);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+
+const queryValidator = require('./middleware/queryValidator');
+
+app.post('/execute-query', queryValidator, async (req, res) => {
+  try {
+    const { query, queryType } = req.body;
+    const result = await executeQuery(query, queryType);
+    res.json({ result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 app.listen(appPort, () => console.log("Server running on port 3000"));
