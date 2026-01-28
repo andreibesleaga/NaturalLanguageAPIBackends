@@ -11,8 +11,9 @@ Define the schemas in `schema/schema.graphql`, `schema/schema.openapi`, `schema/
 3.  Update the `.env` file with your specific service URLs.
 
 ## Endpoints
-/generate-query - to get formatted query from prompt input
-/execute-query - to execute query
-/ai-query - full generation of a specific query type from prompt, validation, execution and returning results
 
-More info in OpenAPI of the service: api_openapi.yaml
+- /generate-query - to get formatted query from prompt input
+- /execute-query - to execute query
+- /ai-query - full generation of a specific query type from prompt, validation, execution and returning results
+
+- More info in OpenAPI of the service: api_openapi.yaml
