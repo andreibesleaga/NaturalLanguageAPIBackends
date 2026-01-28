@@ -1,9 +1,0 @@
-
-> nl-to-api-backend@1.2.0 test:e2e
-> node test/e2e_test.js
-
-🚀 Starting End-to-End Tests with OpenRouter...
-
-🧪 Test 1: Generate SQL Query
-SQL Prompt: Show me all users with an email ending in gmail.com
-DEBUG: Loaded schemas total characters: 1246
