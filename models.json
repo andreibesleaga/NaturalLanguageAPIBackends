@@ -1,7 +1,11 @@
-
 {
   "default_model": "gpt-4-turbo",
   "models": {
+    "openrouter-auto": {
+      "provider": "OpenRouter",
+      "api_key": "",
+      "model": "deepseek/deepseek-r1-0528:free"
+    },
     "gpt-4-turbo": {
       "provider": "OpenAI",
       "api_key": "your_openai_key"

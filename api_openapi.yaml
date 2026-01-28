@@ -1,0 +1,165 @@
+openapi: 3.0.0
+info:
+  title: Natural Language to API Backend
+  description: API for converting natural language queries into backend operations (GraphQL, REST, SQL) and executing them.
+  version: 1.2.0
+servers:
+  - url: http://localhost:3000
+    description: Local server
+paths:
+  /generate-query:
+    post:
+      summary: Generate a backend query from natural language
+      description: Uses an LLM to convert a natural language prompt into a specific query format (SQL, GraphQL, or REST configuration) based on the provided schemas.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+                - queryType
+              properties:
+                query:
+                  type: string
+                  description: The natural language query to convert.
+                  example: "Get all users with email ending in gmail.com"
+                queryType:
+                  type: string
+                  enum: [GraphQL, REST, SQL]
+                  description: The target backend type.
+                model:
+                  type: string
+                  description: Optional specific LLM model to use (e.g. gpt-4-turbo, openrouter-auto).
+      responses:
+        '200':
+          description: Successful generation
+          content:
+            application/json:
+              schema:
+                type: string
+                description: The generated query code or JSON string.
+        '400':
+          description: Missing require fields or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /execute-query:
+    post:
+      summary: Execute a pre-generated query
+      description: Validates and executes a raw query string (SQL or GraphQL) or JSON configuration (REST) against the configured backends.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+                - queryType
+              properties:
+                query:
+                  type: string
+                  description: The raw query code (SQL/GraphQL) or JSON string (REST).
+                queryType:
+                  type: string
+                  enum: [GraphQL, REST, SQL]
+      responses:
+        '200':
+          description: Execution successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+                    description: The result data from the backend.
+        '400':
+          description: Validation failure or missing fields
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Error'
+                  - type: object
+                    properties:
+                      details:
+                        type: array
+                        items: 
+                          type: string
+                        description: specific validation errors
+        '500':
+          description: Execution or Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /ai-query:
+    post:
+      summary: Convert and Execute (End-to-End)
+      description: Combines generation, validation, and execution in a single step.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - prompt
+                - queryType
+              properties:
+                prompt:
+                  type: string
+                  description: The natural language query.
+                  example: "Find the user with ID 5"
+                queryType:
+                  type: string
+                  enum: [GraphQL, REST, SQL]
+                model:
+                  type: string
+                  description: Optional specific LLM model.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  generatedQuery:
+                    type: string
+                    description: The query that was generated and executed.
+                  result:
+                    type: object
+                    description: The actual data returned from the backend.
+        '400':
+          description: Validation or Input Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
