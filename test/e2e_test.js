@@ -24,6 +24,8 @@ const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
         }
     };
 
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
     try {
         // --- TEST 1: SQL Generation & Validation ---
         // We expect it to generate a valid SQL query based on schema.sql (users table)
@@ -32,7 +34,7 @@ const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
         const sqlPrompt = "Show me all users with an email ending in gmail.com";
         console.log("SQL Prompt:", sqlPrompt);
 
-        const sqlQuery = await engine.generateQuery(sqlPrompt, "SQL", "openrouter-auto");
+        const sqlQuery = await engine.generateQuery(sqlPrompt, "SQL", "deepseek/deepseek-r1-0528:free");
         console.log("Generated SQL:", sqlQuery);
 
         assert.ok(sqlQuery.toLowerCase().includes("select"), "Should act like a SELECT statement");
@@ -42,6 +44,7 @@ const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
         const sqlErrors = await engine.validateSQL(sqlQuery);
         assert.strictEqual(sqlErrors, null, "Generated SQL should be valid against schema");
         console.log("✅ SQL Generation & Validation Passed");
+        await sleep(3000);
 
 
         // --- TEST 2: REST/OpenAPI Generation ---
@@ -50,7 +53,7 @@ const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
         const apiPrompt = "Get the user details for user id 123";
         console.log("API Prompt:", apiPrompt);
 
-        const apiQuery = await engine.generateQuery(apiPrompt, "REST", "openrouter-auto");
+        const apiQuery = await engine.generateQuery(apiPrompt, "REST", "deepseek/deepseek-r1-0528:free");
         console.log("Generated REST:", apiQuery);
         // Expect JSON string: { "method": "GET", "url": "/user/123" }
         // Note: LLM might return Markdown code block, we need to handle that in real app or prompt strictly.
@@ -84,6 +87,24 @@ const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
         const apiErrors = await engine.validateOpenAPI(apiJson);
         assert.strictEqual(apiErrors, null, "Generated REST query should be valid against OpenAPI schema");
         console.log("✅ REST Generation & Validation Passed");
+        await sleep(3000);
+
+
+        // --- TEST 2.5: GraphQL Generation ---
+        console.log("\n🧪 Test 2.5: Generate GraphQL Query");
+        const gqlPrompt = "Get user name for id 10";
+        const gqlQuery = await engine.generateQuery(gqlPrompt, "GraphQL", "deepseek/deepseek-r1-0528:free");
+        console.log("Generated GraphQL:", gqlQuery);
+
+        // Basic check
+        assert.ok(gqlQuery.includes("getUser"), "Should use getUser query");
+        assert.ok(gqlQuery.includes("name"), "Should request name field");
+
+        console.log("Validating GraphQL...");
+        const gqlErrors = await engine.validateGraphQL(gqlQuery);
+        assert.strictEqual(gqlErrors, null, "Generated GraphQL should be valid");
+        console.log("✅ GraphQL Generation & Validation Passed");
+        await sleep(3000);
 
 
         // --- TEST 3: Full AI Query (End-to-End attempt) ---
@@ -101,7 +122,8 @@ const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
             return { mockData: "Success" };
         };
 
-        const result = await engine.processNaturalQuery(sqlPrompt, "SQL", "openrouter-auto");
+        const pipelinePrompt = "Find user with email test@test.com";
+        const result = await engine.processNaturalQuery(pipelinePrompt, "SQL", "deepseek/deepseek-r1-0528:free");
         assert.ok(result.generatedQuery, "Should have generated query");
         assert.ok(result.result, "Should have result");
         assert.deepStrictEqual(result.result, { mockData: "Success" });
