@@ -3,7 +3,7 @@
   "models": {
     "openrouter-auto": {
       "provider": "OpenRouter",
-      "api_key": "",
+      "api_key": "your_openrouter_key",
       "model": "deepseek/deepseek-r1-0528:free"
     },
     "gpt-4-turbo": {
